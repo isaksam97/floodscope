@@ -15,7 +15,7 @@ Run it:  python -m floodscope.ingest
 
 import geopandas as gpd
 import pandas as pd
-from shapely.geometry import Point
+from shapely.geometry import MultiPolygon, Point
 
 from .config import TARGET_CRS, database_url
 
@@ -43,7 +43,10 @@ def load_flood_zones() -> gpd.GeoDataFrame:
         raise ValueError("No zone column found in flood-zone data — check the source.")
     gdf["zone"] = gdf[zone_col].astype(int)
     gdf = _validate(gdf)
-    return gdf[["zone", "geometry"]]
+    gdf["geometry"] = gdf["geometry"].apply(
+        lambda g: MultiPolygon([g]) if g.geom_type == "Polygon" else g
+    )
+    return gdf[["zone", "geometry"]].rename_geometry("geom")
 
 
 def load_postcodes() -> gpd.GeoDataFrame:
@@ -55,7 +58,7 @@ def load_postcodes() -> gpd.GeoDataFrame:
         geometry=geom,
         crs=TARGET_CRS,  # ONS eastings/northings are already BNG
     )
-    return gdf.drop_duplicates("postcode")
+    return gdf.drop_duplicates("postcode").rename_geometry("geom")
 
 
 def main():
