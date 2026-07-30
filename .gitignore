@@ -8,3 +8,4 @@ data/*.gpkg
 data/*.dbf
 data/*.shx
 data/*.prj
+data/*.geojson

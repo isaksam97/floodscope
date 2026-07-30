@@ -16,11 +16,12 @@ Run it:  python -m floodscope.ingest
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import MultiPolygon, Point
+from sqlalchemy import create_engine
 
 from .config import TARGET_CRS, database_url
 
 # --- point these at your downloaded files (see data/README.md) ---
-FLOOD_ZONES_PATH = "data/flood_zones.shp"     # EA Flood Map for Planning (Zones 2 & 3)
+FLOOD_ZONES_PATH = "data/flood_zones.geojson"  # EA Flood Map for Planning (Zones 2 & 3)
 POSTCODES_PATH = "data/postcodes.csv"         # ONS postcode directory (subset)
 POSTCODE_COL = "pcds"
 EAST_COL, NORTH_COL = "oseast1m", "osnrth1m"  # ONS BNG eastings/northings
@@ -41,7 +42,8 @@ def load_flood_zones() -> gpd.GeoDataFrame:
     zone_col = next((c for c in gdf.columns if c.lower() in ("zone", "flood_zone")), None)
     if zone_col is None:
         raise ValueError("No zone column found in flood-zone data — check the source.")
-    gdf["zone"] = gdf[zone_col].astype(int)
+    # EA data encodes this as "FZ2"/"FZ3"; pull out the digit either way.
+    gdf["zone"] = gdf[zone_col].astype(str).str.extract(r"(\d+)").astype(int)
     gdf = _validate(gdf)
     gdf["geometry"] = gdf["geometry"].apply(
         lambda g: MultiPolygon([g]) if g.geom_type == "Polygon" else g
@@ -62,15 +64,15 @@ def load_postcodes() -> gpd.GeoDataFrame:
 
 
 def main():
-    url = database_url()
+    engine = create_engine(database_url())
     print("Loading flood zones…")
     zones = load_flood_zones()
-    zones.to_postgis("flood_zones", url, if_exists="append", index=False)
+    zones.to_postgis("flood_zones", engine, if_exists="append", index=False)
     print(f"  -> {len(zones)} flood-zone polygons published")
 
     print("Loading postcodes…")
     pcs = load_postcodes()
-    pcs.to_postgis("properties", url, if_exists="append", index=False)
+    pcs.to_postgis("properties", engine, if_exists="append", index=False)
     print(f"  -> {len(pcs)} postcodes published")
     print("Done. Remember the GiST indexes are created by db/schema.sql.")
 
