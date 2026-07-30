@@ -11,6 +11,7 @@ Endpoints:
 """
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .db import lookup_postcode_risk
@@ -20,6 +21,15 @@ app = FastAPI(
     title="FloodScope",
     version="0.1.0",
     description="Geospatial flood-risk scoring for property/insurance use cases.",
+)
+
+# web/index.html is opened as a local file or served from a different port
+# than this API, so the browser sends it as a cross-origin request.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET"],
+    allow_headers=["*"],
 )
 
 
