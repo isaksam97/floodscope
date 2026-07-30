@@ -1,0 +1,16 @@
+# Core geospatial
+geopandas>=0.14
+shapely>=2.0
+pyproj>=3.6
+# Database
+SQLAlchemy>=2.0
+GeoAlchemy2>=0.14
+psycopg2-binary>=2.9
+# API
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+# Data + testing
+pandas>=2.0
+pytest>=8.0
+httpx>=0.27

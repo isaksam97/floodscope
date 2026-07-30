@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FloodScope — demo map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; }
+    #bar { padding: 10px; display: flex; gap: 8px; align-items: center; }
+    #map { height: calc(100vh - 56px); }
+    input, button { padding: 6px 10px; font-size: 14px; }
+    #out { font-weight: 600; }
+  </style>
+</head>
+<body>
+  <!--
+    Phase 4 scaffold: a bare-bones Leaflet map that calls the FloodScope API.
+    This is intentionally minimal. The learning goal here is "wire a web map to
+    a geospatial API"; polish/React+TypeScript is the stretch (see README).
+    Serve it alongside the API and open in a browser.
+  -->
+  <div id="bar">
+    <input id="pc" placeholder="Postcode e.g. SE5 7UD" />
+    <button onclick="lookup()">Check flood risk</button>
+    <span id="out"></span>
+  </div>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const API = "http://localhost:8000";
+    const map = L.map("map").setView([51.5, -0.1], 10);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors",
+    }).addTo(map);
+
+    async function lookup() {
+      const pc = document.getElementById("pc").value.trim();
+      const out = document.getElementById("out");
+      out.textContent = "…";
+      try {
+        const res = await fetch(`${API}/risk?postcode=${encodeURIComponent(pc)}`);
+        if (!res.ok) { out.textContent = "Not found"; return; }
+        const d = await res.json();
+        out.textContent = `${d.postcode}: ${d.band} (zone ${d.zone ?? 1}, ${d.composite})`;
+      } catch (e) {
+        out.textContent = "API not reachable — is it running on :8000?";
+      }
+    }
+  </script>
+</body>
+</html>
